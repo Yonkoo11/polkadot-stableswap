@@ -4,6 +4,26 @@ A Curve-style StableSwap DEX deployed on Polkadot Hub, built for the Polkadot So
 
 **[Live Demo](https://yonkoo11.github.io/polkadot-stableswap/)** | Connect MetaMask to Polkadot Hub TestNet to swap
 
+## Screenshots
+
+| Swap | Dashboard | Liquidity |
+|------|-----------|-----------|
+| ![Swap](docs/screenshot-swap.png) | ![Dashboard](docs/screenshot-dashboard.png) | ![Liquidity](docs/screenshot-liquidity.png) |
+
+## Quick Walkthrough (For Judges)
+
+1. Open the [live demo](https://yonkoo11.github.io/polkadot-stableswap/) and explore the **Pool** tab to see live on-chain stats (no wallet needed)
+2. Add Polkadot Hub TestNet to MetaMask (Chain ID `420420417`, RPC `https://eth-rpc-testnet.polkadot.io/`)
+3. Get test DOT from the [Polkadot Faucet](https://faucet.polkadot.io/) and click **Connect Wallet**
+4. On the **Swap** tab, enter an amount and swap USDC for USDT in a single hop with near-zero slippage
+5. On the **Liquidity** tab, add liquidity to earn swap fees and receive LP tokens
+
+## Hackathon Tracks
+
+- **Track 1: DeFi / Stablecoins** - Direct stablecoin swap infrastructure
+- **Track 2: Native Asset Interaction** - ERC-20 precompile integration design (mock tokens on testnet, precompile-ready on mainnet)
+- **OpenZeppelin Sponsor Track** - Non-trivial usage of 5 OpenZeppelin modules across pool contracts
+
 ## The Problem
 
 Polkadot Hub's built-in AssetConversion pallet requires DOT in every trading pair. To swap USDC for USDT, you must route USDC -> DOT -> USDT, taking two hops with double slippage and double fees. There is no way to create a direct USDC/USDT pool using the pallet.
@@ -41,8 +61,33 @@ src/
 └── mocks/
     └── MockERC20.sol           # Test tokens (USDC, USDT)
 
-frontend/                       # React + Vite + ethers.js v6
+frontend/
+├── src/
+│   ├── App.tsx                 # Root layout with tab navigation
+│   ├── components/
+│   │   ├── SwapPanel.tsx       # Token swap with real-time quotes
+│   │   ├── LiquidityPanel.tsx  # Add/remove liquidity
+│   │   ├── Dashboard.tsx       # Live pool stats (bento grid)
+│   │   ├── Header.tsx          # Wallet connection + network detection
+│   │   ├── SlippageChart.tsx   # StableSwap vs x*y=k comparison curve
+│   │   └── TokenIcon.tsx       # USDC/USDT/DOT icons
+│   ├── hooks/
+│   │   ├── useWallet.ts        # MetaMask connection + chain switching
+│   │   └── useContracts.ts     # Contract instances + read provider
+│   └── config/
+│       └── contracts.ts        # Addresses, ABIs, pool registry
+└── index.html
 ```
+
+## Frontend Features
+
+- **Glass morphism UI** with aurora ambient background and frosted card surfaces
+- **Real-time pool stats** fetched via `JsonRpcProvider` (no wallet required)
+- **30-second auto-refresh** with manual refresh button on the dashboard
+- **Mobile responsive** down to 390px (iPhone SE)
+- **Swap panel** with live quote fetching, slippage settings, and StableSwap vs Uniswap V2 comparison chart
+- **Liquidity panel** with add/remove tabs, pool info, and overlapping LP token icons
+- **Dashboard** with bento grid layout showing TVL, composition bar, virtual price, amplification factor, swap fee, and recent swap history
 
 ### StableSwap Math
 
@@ -174,12 +219,6 @@ forge test -vvv
 # Run specific suite
 forge test --match-contract StablePoolTest
 ```
-
-## Hackathon Tracks
-
-- **Track 1: DeFi / Stablecoins** - Direct stablecoin swap infrastructure
-- **Track 2: Native Asset Interaction** - ERC-20 precompile integration design (mock tokens on testnet, precompile-ready on mainnet)
-- **OpenZeppelin Sponsor Track** - Non-trivial usage of 5 OpenZeppelin modules across pool contracts
 
 ## Technical Details
 

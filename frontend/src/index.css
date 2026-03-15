@@ -9,7 +9,7 @@
 
 :root {
   /* Core palette */
-  --bg: #0c0815;
+  --bg: #0a0812;
   --bg-card: rgba(20, 21, 28, 0.55);
   --bg-input: rgba(26, 27, 35, 0.8);
   --bg-hover: rgba(30, 31, 42, 0.9);
@@ -28,8 +28,8 @@
   --accent: #e6007a;
   --accent-hover: #cc006b;
   --accent-soft: rgba(230, 0, 122, 0.10);
-  --accent-glow: rgba(230, 0, 122, 0.20);
-  --accent-glow-strong: rgba(230, 0, 122, 0.35);
+  --accent-glow: rgba(230, 0, 122, 0.12);
+  --accent-glow-strong: rgba(230, 0, 122, 0.20);
 
   /* Semantic */
   --green: #22c55e;
@@ -65,10 +65,10 @@ body {
   font-family: var(--sans);
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(230, 0, 122, 0.30) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(230, 0, 122, 0.22) 0%, transparent 50%),
-    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(120, 0, 80, 0.15) 0%, transparent 70%),
-    radial-gradient(ellipse 40% 30% at 70% 20%, rgba(100, 0, 180, 0.12) 0%, transparent 60%);
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(80, 0, 180, 0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(60, 0, 140, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(40, 0, 100, 0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 20%, rgba(90, 0, 160, 0.10) 0%, transparent 60%);
   background-attachment: fixed;
   color: var(--text);
   line-height: 1.5;

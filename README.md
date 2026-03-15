@@ -2,6 +2,8 @@
 
 A Curve-style StableSwap DEX deployed on Polkadot Hub, built for the Polkadot Solidity Hackathon 2026.
 
+**[Live Demo](https://yonkoo11.github.io/polkadot-stableswap/)** | Connect MetaMask to Polkadot Hub TestNet to swap
+
 ## The Problem
 
 Polkadot Hub's built-in AssetConversion pallet requires DOT in every trading pair. To swap USDC for USDT, you must route USDC -> DOT -> USDT, taking two hops with double slippage and double fees. There is no way to create a direct USDC/USDT pool using the pallet.

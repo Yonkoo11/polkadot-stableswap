@@ -1535,6 +1535,12 @@
 
   .nav-tabs {
     margin-left: auto;
+    gap: 2px;
+  }
+
+  .nav-tab {
+    padding: 5px 10px;
+    font-size: 13px;
   }
 
   .network-badge {

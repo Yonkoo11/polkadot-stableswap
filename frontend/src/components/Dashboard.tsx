@@ -45,6 +45,7 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
   const [recentSwaps, setRecentSwaps] = useState<SwapEvent[]>([]);
   const [userPosition, setUserPosition] = useState<UserPosition | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -129,6 +130,21 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
     Promise.all([fetchStats(), fetchRecentSwaps()]).finally(() => setLoading(false));
   }, [fetchStats, fetchRecentSwaps]);
 
+  // Auto-refresh every 30 seconds (silent, no skeleton)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchStats();
+      fetchRecentSwaps();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchStats, fetchRecentSwaps]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchStats(), fetchRecentSwaps()]);
+    setRefreshing(false);
+  };
+
   if (loading) {
     return (
       <div className="dashboard">
@@ -164,7 +180,16 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
     <div className="dashboard">
       <div className="dashboard-hero">
         <h1>USDC / USDT StablePool</h1>
-        <p>First native StableSwap on Polkadot Hub. Near-zero slippage for pegged assets.</p>
+        <p>
+          First native StableSwap on Polkadot Hub. Near-zero slippage for pegged assets.
+          <button className={`refresh-btn${refreshing ? ' refreshing' : ''}`} onClick={handleRefresh} title="Refresh data">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+        </p>
       </div>
 
       <div className="bento-grid">
@@ -228,16 +253,28 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
         <div className="bento-card">
           <div className="bento-label">LP Token Supply</div>
           <div className="bento-value" style={{ fontSize: 20 }}>
-            {stats.lpTotalSupply.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+            {stats.lpTotalSupply.toLocaleString('en-US', { maximumFractionDigits: 2 })} LP
           </div>
           <div className="bento-subvalue">Total LP tokens issued</div>
         </div>
 
-        {/* StableSwap advantage */}
-        <div className="bento-card">
+        {/* StableSwap advantage - wide to fill row */}
+        <div className="bento-card bento-card--wide">
           <div className="bento-label">Slippage Advantage</div>
           <div className="bento-value bento-value--accent">10-100x</div>
-          <div className="bento-subvalue">vs Uniswap V2 for stablecoins</div>
+          <div className="bento-subvalue">vs Uniswap V2 for stablecoins. Curve-style invariant (A=85) concentrates liquidity around the peg.</div>
+        </div>
+
+        {/* Network card */}
+        <div className="bento-card">
+          <div className="bento-label">Network</div>
+          <div className="bento-value" style={{ fontSize: 18 }}>Polkadot Hub</div>
+          <div className="bento-subvalue">
+            Chain ID 420420417 &middot;{' '}
+            <a href={POLKADOT_HUB_TESTNET.blockExplorer} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+              Blockscout
+            </a>
+          </div>
         </div>
       </div>
 
@@ -274,10 +311,10 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
         </div>
       )}
 
-      {/* Recent Swaps */}
-      {recentSwaps.length > 0 && (
-        <div className="bento-card bento-card--full" style={{ marginTop: 12 }}>
-          <div className="bento-label">Recent Swaps</div>
+      {/* Recent Swaps - always visible */}
+      <div className="bento-card bento-card--full" style={{ marginTop: 12 }}>
+        <div className="bento-label">Recent Swaps</div>
+        {recentSwaps.length > 0 ? (
           <table className="swaps-table">
             <thead>
               <tr>
@@ -320,8 +357,10 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
+        ) : (
+          <div className="swaps-empty">No recent swaps in the last 500 blocks</div>
+        )}
+      </div>
     </div>
   );
 }

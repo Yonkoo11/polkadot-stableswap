@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Contract, parseUnits, formatUnits, JsonRpcSigner } from 'ethers';
+import { Contract, parseUnits, formatUnits, JsonRpcSigner, JsonRpcProvider } from 'ethers';
 import { TOKENS, POOLS, PoolType, POLKADOT_HUB_TESTNET, isZeroAddress, ERC20_ABI } from '../config/contracts';
 import type { PoolConfig } from '../config/contracts';
 import { TokenIcon } from './TokenSelect';
@@ -10,9 +10,10 @@ import VolatilePoolABI from '../abi/VolatilePool.json';
 interface LiquidityPanelProps {
   signer: JsonRpcSigner | null;
   account: string | null;
+  readProvider: JsonRpcProvider;
 }
 
-export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
+export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanelProps) {
   const [selectedPool, setSelectedPool] = useState<PoolConfig>(POOLS[0]);
   const [mode, setMode] = useState<'add' | 'remove'>('add');
   const [amount0, setAmount0] = useState('');
@@ -40,29 +41,29 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
   const token1 = TOKENS[selectedPool.token1Symbol];
   const poolDeployed = !isZeroAddress(selectedPool.address);
 
-  // Fetch pool stats
+  // Fetch pool stats (uses readProvider so stats are visible without wallet)
   const fetchPoolStats = useCallback(async () => {
-    if (!poolDeployed || !signer) return;
+    if (!poolDeployed || !readProvider) return;
 
     try {
       if (selectedPool.type === PoolType.Stable) {
-        const pool = new Contract(selectedPool.address, StablePoolABI, signer);
+        const pool = new Contract(selectedPool.address, StablePoolABI, readProvider);
         const [b0, b1, vp, fee, a] = await Promise.all([
           pool.getTokenBalance(0),
           pool.getTokenBalance(1),
           pool.getVirtualPrice().catch(() => 0n),
           pool.fee(),
-          pool.getA(),
+          pool.getA().then((v: bigint) => v / (2n * 10n ** 18n)),
         ]);
         setPoolStats({
           reserve0: formatUnits(b0, token0.decimals),
           reserve1: formatUnits(b1, token1.decimals),
           virtualPrice: formatUnits(vp, 18),
           fee: (Number(fee) / 1e8).toFixed(4),
-          ampFactor: a.toString(),
+          ampFactor: Number(a).toString(),
         });
       } else {
-        const pool = new Contract(selectedPool.address, VolatilePoolABI, signer);
+        const pool = new Contract(selectedPool.address, VolatilePoolABI, readProvider);
         const [reserves, fee] = await Promise.all([
           pool.getReserves(),
           pool.fee(),
@@ -77,7 +78,7 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
       console.error('Failed to fetch pool stats:', err);
       setPoolStats(null);
     }
-  }, [selectedPool, signer, poolDeployed, token0.decimals, token1.decimals]);
+  }, [selectedPool, readProvider, poolDeployed, token0.decimals, token1.decimals]);
 
   // Fetch balances
   const fetchBalances = useCallback(async () => {
@@ -286,6 +287,12 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
         </div>
       )}
 
+      {poolDeployed && !account && (
+        <div className="notice">
+          Provide USDC and USDT to earn swap fees. You'll receive LP tokens representing your share of the pool.
+        </div>
+      )}
+
       {mode === 'add' ? (
         <>
           <div className="input-group">
@@ -373,7 +380,13 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
             <div className="input-row">
               <div className="token-select">
                 <label className="token-label">LP Tokens</label>
-                <span className="token-badge">LP</span>
+                <span className="token-badge">
+                  <span className="lp-icon-stack">
+                    <TokenIcon symbol={token0.symbol} size={22} />
+                    <span style={{ marginLeft: -8 }}><TokenIcon symbol={token1.symbol} size={22} /></span>
+                  </span>
+                  LP
+                </span>
               </div>
               <div className="input-amount">
                 <input

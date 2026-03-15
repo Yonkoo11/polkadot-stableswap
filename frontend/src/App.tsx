@@ -50,6 +50,7 @@ function App() {
           <LiquidityPanel
             signer={wallet.signer}
             account={wallet.account}
+            readProvider={readProvider}
           />
         )}
         {activeTab === 'dashboard' && (

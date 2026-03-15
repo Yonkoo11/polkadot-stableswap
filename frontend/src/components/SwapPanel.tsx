@@ -299,7 +299,10 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
           />
           <div className="input-amount">
             {quoting ? (
-              <div className="shimmer-box" />
+              <div className="shimmer-wrapper">
+                <div className="shimmer-box" />
+                <span className="shimmer-label">Fetching quote...</span>
+              </div>
             ) : (
               <input
                 type="text"
@@ -439,7 +442,7 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
               </svg>
               Processing...
             </>
-          ) : `Swap ${tokenIn} for ${tokenOut}`}
+          ) : `Swap ${parseFloat(amountIn).toFixed(2)} ${tokenIn} for ~${parseFloat(amountOut).toFixed(2)} ${tokenOut}`}
         </button>
       )}
 

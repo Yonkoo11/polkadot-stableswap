@@ -9,8 +9,8 @@
 
 :root {
   /* Core palette */
-  --bg: #080910;
-  --bg-card: rgba(20, 21, 28, 0.75);
+  --bg: #0c0815;
+  --bg-card: rgba(20, 21, 28, 0.55);
   --bg-input: rgba(26, 27, 35, 0.8);
   --bg-hover: rgba(30, 31, 42, 0.9);
 
@@ -65,9 +65,10 @@ body {
   font-family: var(--sans);
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(230, 0, 122, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(230, 0, 122, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(100, 0, 60, 0.04) 0%, transparent 70%);
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(230, 0, 122, 0.30) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 110%, rgba(230, 0, 122, 0.22) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(120, 0, 80, 0.15) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 70% 20%, rgba(100, 0, 180, 0.12) 0%, transparent 60%);
   background-attachment: fixed;
   color: var(--text);
   line-height: 1.5;
@@ -88,7 +89,7 @@ body {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
   z-index: 0;
@@ -103,15 +104,36 @@ input[type="number"]::-webkit-inner-spin-button {
   margin: 0;
 }
 
+/* Grain texture overlay */
+#root::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
 /* Global keyframes */
 @keyframes breathe-a {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 0.9; transform: scale(1.08); }
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.12); }
 }
 
 @keyframes breathe-b {
-  0%, 100% { opacity: 0.4; transform: scale(1) translate(0, 0); }
-  50% { opacity: 0.7; transform: scale(1.12) translate(4px, -8px); }
+  0%, 100% { opacity: 0.5; transform: scale(1) translate(0, 0); }
+  50% { opacity: 0.85; transform: scale(1.15) translate(6px, -10px); }
+}
+
+@keyframes aurora-drift {
+  0%   { transform: translate(-30%, -20%) rotate(0deg); }
+  25%  { transform: translate(-25%, -30%) rotate(3deg); }
+  50%  { transform: translate(-35%, -25%) rotate(-2deg); }
+  75%  { transform: translate(-28%, -18%) rotate(1deg); }
+  100% { transform: translate(-30%, -20%) rotate(0deg); }
 }
 
 @keyframes page-fade-in {

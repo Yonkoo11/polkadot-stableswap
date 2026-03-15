@@ -5,6 +5,61 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  position: relative;
+}
+
+/* ================================
+   Background Aurora System
+   ================================ */
+.bg-aurora {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+}
+
+.bg-orb--1 {
+  width: 800px;
+  height: 800px;
+  top: -20%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(230, 0, 122, 0.55) 0%, rgba(230, 0, 122, 0.20) 40%, transparent 70%);
+  animation: breathe-a 17s ease-in-out infinite;
+}
+
+.bg-orb--2 {
+  width: 600px;
+  height: 600px;
+  bottom: -8%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(180, 0, 140, 0.40) 0%, rgba(120, 0, 200, 0.12) 40%, transparent 70%);
+  animation: breathe-b 23s ease-in-out infinite;
+}
+
+.bg-orb--3 {
+  width: 650px;
+  height: 650px;
+  top: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(230, 0, 122, 0.35) 0%, rgba(180, 0, 100, 0.12) 45%, transparent 70%);
+  animation: breathe-a 29s ease-in-out infinite reverse;
+}
+
+.bg-orb--4 {
+  width: 450px;
+  height: 450px;
+  top: 10%;
+  right: -5%;
+  background: radial-gradient(circle, rgba(120, 0, 200, 0.25) 0%, rgba(80, 0, 160, 0.08) 40%, transparent 70%);
+  animation: breathe-b 19s ease-in-out infinite;
 }
 
 /* ================================
@@ -39,7 +94,7 @@
 .logo-mark {
   color: var(--accent);
   display: flex;
-  filter: drop-shadow(0 0 8px rgba(230, 0, 122, 0.5));
+  filter: drop-shadow(0 0 12px rgba(230, 0, 122, 0.6)) drop-shadow(0 0 30px rgba(230, 0, 122, 0.2));
 }
 
 .logo-text {
@@ -309,34 +364,7 @@
   overflow: hidden;
 }
 
-.main::before {
-  content: '';
-  position: absolute;
-  width: 600px;
-  height: 600px;
-  top: -100px;
-  left: 50%;
-  transform: translateX(-60%);
-  background: radial-gradient(circle, rgba(230, 0, 122, 0.12) 0%, transparent 65%);
-  border-radius: 50%;
-  animation: breathe-a 17s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-.main::after {
-  content: '';
-  position: absolute;
-  width: 400px;
-  height: 400px;
-  bottom: 50px;
-  right: 10%;
-  background: radial-gradient(circle, rgba(230, 0, 122, 0.07) 0%, transparent 65%);
-  border-radius: 50%;
-  animation: breathe-b 23s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
+/* Ambient orbs now handled by .bg-aurora in App.tsx */
 
 .main--dashboard {
   align-items: flex-start;
@@ -374,14 +402,14 @@
   transform: translateX(-50%);
   width: 60%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(230, 0, 122, 0.5), transparent);
+  background: linear-gradient(90deg, transparent, rgba(230, 0, 122, 0.7), transparent);
   border-radius: 0 0 50% 50%;
   pointer-events: none;
 }
 
 .panel:hover {
-  border-color: rgba(230, 0, 122, 0.2);
-  box-shadow: var(--shadow-panel), 0 0 60px rgba(230, 0, 122, 0.06);
+  border-color: rgba(230, 0, 122, 0.25);
+  box-shadow: var(--shadow-panel), 0 0 80px rgba(230, 0, 122, 0.12);
 }
 
 .panel-header {
@@ -1350,8 +1378,8 @@
 }
 
 .bento-card:hover {
-  border-color: rgba(230, 0, 122, 0.2);
-  box-shadow: var(--shadow-card), 0 0 30px rgba(230, 0, 122, 0.05);
+  border-color: rgba(230, 0, 122, 0.25);
+  box-shadow: var(--shadow-card), 0 0 50px rgba(230, 0, 122, 0.10);
 }
 
 /* Top-edge glow line on cards */
@@ -1362,7 +1390,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(230, 0, 122, 0.4) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(230, 0, 122, 0.6) 50%, transparent 100%);
 }
 
 .bento-card--wide {
@@ -1551,16 +1579,10 @@
     padding: 24px 12px 60px;
   }
 
-  .main::before {
-    width: 300px;
-    height: 300px;
-    top: -50px;
-  }
-
-  .main::after {
-    width: 200px;
-    height: 200px;
-  }
+  .bg-orb--1 { width: 400px; height: 400px; }
+  .bg-orb--2 { width: 300px; height: 300px; }
+  .bg-orb--3 { width: 350px; height: 350px; }
+  .bg-orb--4 { width: 250px; height: 250px; }
 
   .panel {
     padding: 16px;

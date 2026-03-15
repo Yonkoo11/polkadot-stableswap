@@ -103,7 +103,7 @@ Polkadot Hub's ERC-20 precompile addresses for native USDC (asset ID 1337) and U
 
 ```bash
 # Clone
-git clone https://github.com/YonkOO11/polkadot-stableswap.git
+git clone https://github.com/Yonkoo11/polkadot-stableswap.git
 cd polkadot-stableswap
 
 # Install dependencies

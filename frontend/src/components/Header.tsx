@@ -41,22 +41,25 @@ export function Header({
           </svg>
         </div>
         <span className="logo-text">StableSwap</span>
-        <nav className="nav-tabs">
+        <nav className="nav-tabs" aria-label="Main navigation">
           <button
             className={`nav-tab ${activeTab === 'swap' ? 'active' : ''}`}
             onClick={() => onTabChange('swap')}
+            aria-current={activeTab === 'swap' ? 'page' : undefined}
           >
             Swap
           </button>
           <button
             className={`nav-tab ${activeTab === 'liquidity' ? 'active' : ''}`}
             onClick={() => onTabChange('liquidity')}
+            aria-current={activeTab === 'liquidity' ? 'page' : undefined}
           >
             Liquidity
           </button>
           <button
             className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
             onClick={() => onTabChange('dashboard')}
+            aria-current={activeTab === 'dashboard' ? 'page' : undefined}
           >
             Pool
           </button>

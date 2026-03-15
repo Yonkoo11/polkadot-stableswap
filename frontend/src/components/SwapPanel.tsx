@@ -3,7 +3,8 @@ import { Contract, parseUnits, formatUnits, JsonRpcSigner } from 'ethers';
 import { TOKENS, CONTRACTS, POLKADOT_HUB_TESTNET, isZeroAddress, ERC20_ABI, PoolType } from '../config/contracts';
 import { TokenSelect } from './TokenSelect';
 import { Settings } from './Settings';
-import { TransactionStepper, useTransactionSteps } from './TransactionStepper';
+import { TransactionStepper } from './TransactionStepper';
+import { useTransactionSteps } from '../hooks/useTransactionSteps';
 import { RateIndicator } from './RateIndicator';
 import RouterABI from '../abi/Router.json';
 
@@ -193,7 +194,7 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
       setTimeout(() => {
         stepper.reset();
       }, 3000);
-    } catch (err: unknown) {
+    } catch {
       stepper.fail();
       // Show error briefly, then reset
       setTimeout(() => {

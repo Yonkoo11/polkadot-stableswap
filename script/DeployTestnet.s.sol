@@ -38,9 +38,9 @@ contract DeployTestnetScript is Script {
         StablePool stablePool = new StablePool(
             address(usdc),
             address(usdt),
-            85,       // A = 85
-            4e6,      // fee = 0.04%
-            5e9,      // adminFee = 50%
+            85, // A = 85
+            4e6, // fee = 0.04%
+            5e9, // adminFee = 50%
             "USDC-USDT StableSwap LP",
             "ssLP"
         );
@@ -57,11 +57,7 @@ contract DeployTestnetScript is Script {
         // Approve and seed 10,000 of each into the stable pool
         usdc.approve(address(stablePool), type(uint256).max);
         usdt.approve(address(stablePool), type(uint256).max);
-        stablePool.addLiquidity(
-            [uint256(10_000e6), uint256(10_000e6)],
-            0,
-            block.timestamp + 3600
-        );
+        stablePool.addLiquidity([uint256(10_000e6), uint256(10_000e6)], 0, block.timestamp + 3600);
         console.log("Seeded StablePool with 10,000 USDC + 10,000 USDT");
 
         // Log remaining balances for the deployer (for demo swaps)

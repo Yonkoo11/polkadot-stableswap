@@ -9,11 +9,11 @@ library ConstantProductMath {
     /// @param reserveIn Reserve of the input token
     /// @param reserveOut Reserve of the output token
     /// @return amountOut Output amount
-    function getAmountOut(
-        uint256 amountIn,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) internal pure returns (uint256 amountOut) {
+    function getAmountOut(uint256 amountIn, uint256 reserveIn, uint256 reserveOut)
+        internal
+        pure
+        returns (uint256 amountOut)
+    {
         require(amountIn > 0, "CPMath: zero input");
         require(reserveIn > 0 && reserveOut > 0, "CPMath: no liquidity");
 
@@ -28,11 +28,11 @@ library ConstantProductMath {
     /// @param reserveIn Reserve of the input token
     /// @param reserveOut Reserve of the output token
     /// @return amountIn Required input amount
-    function getAmountIn(
-        uint256 amountOut,
-        uint256 reserveIn,
-        uint256 reserveOut
-    ) internal pure returns (uint256 amountIn) {
+    function getAmountIn(uint256 amountOut, uint256 reserveIn, uint256 reserveOut)
+        internal
+        pure
+        returns (uint256 amountIn)
+    {
         require(amountOut > 0, "CPMath: zero output");
         require(reserveIn > 0 && reserveOut > amountOut, "CPMath: no liquidity");
 
@@ -47,11 +47,7 @@ library ConstantProductMath {
     /// @param reserveA Reserve of token A
     /// @param reserveB Reserve of token B
     /// @return amountB Equivalent amount of token B
-    function quote(
-        uint256 amountA,
-        uint256 reserveA,
-        uint256 reserveB
-    ) internal pure returns (uint256 amountB) {
+    function quote(uint256 amountA, uint256 reserveA, uint256 reserveB) internal pure returns (uint256 amountB) {
         require(amountA > 0, "CPMath: zero amount");
         require(reserveA > 0 && reserveB > 0, "CPMath: no liquidity");
 

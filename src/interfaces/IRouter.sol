@@ -2,7 +2,10 @@
 pragma solidity ^0.8.28;
 
 interface IRouter {
-    enum PoolType { Stable, Volatile }
+    enum PoolType {
+        Stable,
+        Volatile
+    }
 
     struct Route {
         address tokenIn;
@@ -10,16 +13,9 @@ interface IRouter {
         PoolType poolType;
     }
 
-    function swapExactIn(
-        Route[] calldata routes,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        address to,
-        uint256 deadline
-    ) external returns (uint256 amountOut);
+    function swapExactIn(Route[] calldata routes, uint256 amountIn, uint256 minAmountOut, address to, uint256 deadline)
+        external
+        returns (uint256 amountOut);
 
-    function getAmountsOut(
-        Route[] calldata routes,
-        uint256 amountIn
-    ) external view returns (uint256[] memory amounts);
+    function getAmountsOut(Route[] calldata routes, uint256 amountIn) external view returns (uint256[] memory amounts);
 }

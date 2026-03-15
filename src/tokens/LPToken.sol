@@ -10,11 +10,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 contract LPToken is ERC20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        address pool
-    ) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol, address pool) ERC20(name, symbol) {
         _grantRole(DEFAULT_ADMIN_ROLE, pool);
         _grantRole(MINTER_ROLE, pool);
     }

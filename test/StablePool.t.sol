@@ -23,15 +23,7 @@ contract StablePoolTest is Test {
         usdc = new MockERC20("USD Coin", "USDC", 6);
         usdt = new MockERC20("Tether USD", "USDT", 6);
 
-        pool = new StablePool(
-            address(usdc),
-            address(usdt),
-            AMP,
-            FEE,
-            ADMIN_FEE,
-            "USDC-USDT StableLP",
-            "ssLP"
-        );
+        pool = new StablePool(address(usdc), address(usdt), AMP, FEE, ADMIN_FEE, "USDC-USDT StableLP", "ssLP");
         lp = pool.lpToken();
 
         // Fund users

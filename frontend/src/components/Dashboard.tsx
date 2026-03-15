@@ -107,7 +107,8 @@ export function Dashboard({ readProvider, account }: DashboardProps) {
       if (!swapFilter) return;
 
       const events = await pool.queryFilter(swapFilter, fromBlock, currentBlock);
-      const recent = events.slice(-10).reverse().map((e: any) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const recent = events.slice(-10).reverse().map((e: Record<string, any>) => {
         const args = e.args;
         const tokenInIdx = Number(args.tokenIn);
         return {

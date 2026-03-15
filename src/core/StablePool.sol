@@ -165,11 +165,14 @@ contract StablePool is IStablePool, ReentrancyGuard, Pausable, AccessControl {
 
     // ========== LIQUIDITY ==========
 
-    function addLiquidity(
-        uint256[2] calldata amounts,
-        uint256 minLPOut,
-        uint256 deadline
-    ) external override nonReentrant whenNotPaused ensure(deadline) returns (uint256 lpMinted) {
+    function addLiquidity(uint256[2] calldata amounts, uint256 minLPOut, uint256 deadline)
+        external
+        override
+        nonReentrant
+        whenNotPaused
+        ensure(deadline)
+        returns (uint256 lpMinted)
+    {
         require(amounts[0] > 0 || amounts[1] > 0, "StablePool: zero amounts");
 
         uint256 totalSupply = lpToken.totalSupply();
@@ -241,11 +244,13 @@ contract StablePool is IStablePool, ReentrancyGuard, Pausable, AccessControl {
         emit AddLiquidity(msg.sender, amounts, lpMinted);
     }
 
-    function removeLiquidity(
-        uint256 lpAmount,
-        uint256[2] calldata minAmounts,
-        uint256 deadline
-    ) external override nonReentrant ensure(deadline) returns (uint256[2] memory amounts) {
+    function removeLiquidity(uint256 lpAmount, uint256[2] calldata minAmounts, uint256 deadline)
+        external
+        override
+        nonReentrant
+        ensure(deadline)
+        returns (uint256[2] memory amounts)
+    {
         uint256 totalSupply = lpToken.totalSupply();
         require(lpAmount > 0 && lpAmount <= totalSupply, "StablePool: invalid LP amount");
 
@@ -261,12 +266,13 @@ contract StablePool is IStablePool, ReentrancyGuard, Pausable, AccessControl {
         emit RemoveLiquidity(msg.sender, amounts, lpAmount);
     }
 
-    function removeLiquidityOneToken(
-        uint256 lpAmount,
-        uint256 tokenIndex,
-        uint256 minAmount,
-        uint256 deadline
-    ) external override nonReentrant ensure(deadline) returns (uint256 amount) {
+    function removeLiquidityOneToken(uint256 lpAmount, uint256 tokenIndex, uint256 minAmount, uint256 deadline)
+        external
+        override
+        nonReentrant
+        ensure(deadline)
+        returns (uint256 amount)
+    {
         require(tokenIndex < N_COINS, "StablePool: invalid index");
         uint256 totalSupply = lpToken.totalSupply();
         require(lpAmount > 0 && lpAmount <= totalSupply, "StablePool: invalid LP amount");
@@ -284,11 +290,11 @@ contract StablePool is IStablePool, ReentrancyGuard, Pausable, AccessControl {
         emit RemoveLiquidityOneToken(msg.sender, tokenIndex, amount, lpAmount);
     }
 
-    function _calcRemoveOneToken(
-        uint256 lpAmount,
-        uint256 tokenIndex,
-        uint256 totalSupply
-    ) internal view returns (uint256 dy, uint256 dyFee) {
+    function _calcRemoveOneToken(uint256 lpAmount, uint256 tokenIndex, uint256 totalSupply)
+        internal
+        view
+        returns (uint256 dy, uint256 dyFee)
+    {
         uint256 amp = _getA();
         uint256[2] memory xp = _xp();
         uint256 D0 = StableSwapMath.getD(xp, amp);
@@ -323,8 +329,8 @@ contract StablePool is IStablePool, ReentrancyGuard, Pausable, AccessControl {
 
         require(newAScaled > 0 && newAScaled <= MAX_A * N_COINS * PRECISION, "StablePool: invalid A");
         require(
-            (newAScaled >= currentA && newAScaled <= currentA * MAX_A_CHANGE) ||
-            (newAScaled < currentA && newAScaled * MAX_A_CHANGE >= currentA),
+            (newAScaled >= currentA && newAScaled <= currentA * MAX_A_CHANGE)
+                || (newAScaled < currentA && newAScaled * MAX_A_CHANGE >= currentA),
             "StablePool: A change too large"
         );
 

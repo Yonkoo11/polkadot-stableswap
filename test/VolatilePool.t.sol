@@ -21,13 +21,7 @@ contract VolatilePoolTest is Test {
         dot = new MockERC20("Polkadot", "DOT", 18);
         usdc = new MockERC20("USD Coin", "USDC", 6);
 
-        pool = new VolatilePool(
-            address(dot),
-            address(usdc),
-            FEE,
-            "DOT-USDC LP",
-            "vpLP"
-        );
+        pool = new VolatilePool(address(dot), address(usdc), FEE, "DOT-USDC LP", "vpLP");
 
         // Fund users
         dot.mint(alice, 100_000e18);
@@ -53,9 +47,7 @@ contract VolatilePoolTest is Test {
         (uint256 dotAmt, uint256 usdcAmt) = _sortedAmounts(10_000e18, 100_000e6);
 
         vm.startPrank(alice);
-        (uint256 a0, uint256 a1, uint256 lpOut) = pool.addLiquidity(
-            dotAmt, usdcAmt, 0, 0, alice, block.timestamp + 1
-        );
+        (uint256 a0, uint256 a1, uint256 lpOut) = pool.addLiquidity(dotAmt, usdcAmt, 0, 0, alice, block.timestamp + 1);
         vm.stopPrank();
 
         assertTrue(lpOut > 0);
@@ -72,9 +64,7 @@ contract VolatilePoolTest is Test {
         (uint256 dotAmt, uint256 usdcAmt) = _sortedAmounts(5_000e18, 50_000e6);
 
         vm.startPrank(bob);
-        (,, uint256 lpOut) = pool.addLiquidity(
-            dotAmt, usdcAmt, 0, 0, bob, block.timestamp + 1
-        );
+        (,, uint256 lpOut) = pool.addLiquidity(dotAmt, usdcAmt, 0, 0, bob, block.timestamp + 1);
         vm.stopPrank();
 
         assertTrue(lpOut > 0);
@@ -127,9 +117,7 @@ contract VolatilePoolTest is Test {
         (uint256 dotAmt, uint256 usdcAmt) = _sortedAmounts(10_000e18, 100_000e6);
 
         vm.startPrank(alice);
-        (,, uint256 lpOut) = pool.addLiquidity(
-            dotAmt, usdcAmt, 0, 0, alice, block.timestamp + 1
-        );
+        (,, uint256 lpOut) = pool.addLiquidity(dotAmt, usdcAmt, 0, 0, alice, block.timestamp + 1);
 
         uint256 halfLP = lpOut / 2;
         (uint256 a0, uint256 a1) = pool.removeLiquidity(halfLP, 0, 0, alice, block.timestamp + 1);
@@ -212,14 +200,9 @@ contract FlashBorrower is IFlashLoanReceiver {
         token1 = _token1;
     }
 
-    function onFlashLoan(
-        address,
-        uint256 amount0,
-        uint256 amount1,
-        uint256 fee0,
-        uint256 fee1,
-        bytes calldata
-    ) external {
+    function onFlashLoan(address, uint256 amount0, uint256 amount1, uint256 fee0, uint256 fee1, bytes calldata)
+        external
+    {
         // Repay loan + fees
         if (amount0 + fee0 > 0) {
             MockERC20(token0).transfer(pool, amount0 + fee0);

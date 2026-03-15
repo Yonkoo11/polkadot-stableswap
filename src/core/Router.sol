@@ -28,13 +28,11 @@ contract Router is IRouter {
     /// @param minAmountOut Minimum output (slippage protection)
     /// @param to Recipient address
     /// @param deadline Transaction deadline
-    function swapExactIn(
-        Route[] calldata routes,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        address to,
-        uint256 deadline
-    ) external override returns (uint256 amountOut) {
+    function swapExactIn(Route[] calldata routes, uint256 amountIn, uint256 minAmountOut, address to, uint256 deadline)
+        external
+        override
+        returns (uint256 amountOut)
+    {
         require(routes.length > 0, "Router: empty route");
         require(to != address(0), "Router: zero address");
 
@@ -66,10 +64,12 @@ contract Router is IRouter {
     }
 
     /// @notice Preview output amounts for a multi-hop swap
-    function getAmountsOut(
-        Route[] calldata routes,
-        uint256 amountIn
-    ) external view override returns (uint256[] memory amounts) {
+    function getAmountsOut(Route[] calldata routes, uint256 amountIn)
+        external
+        view
+        override
+        returns (uint256[] memory amounts)
+    {
         amounts = new uint256[](routes.length + 1);
         amounts[0] = amountIn;
 
@@ -101,13 +101,10 @@ contract Router is IRouter {
         return IStablePool(pool).swap(idxIn, idxOut, amountIn, 0, to, deadline);
     }
 
-    function _swapVolatile(
-        address pool,
-        address tokenIn,
-        uint256 amountIn,
-        address to,
-        uint256 deadline
-    ) internal returns (uint256) {
+    function _swapVolatile(address pool, address tokenIn, uint256 amountIn, address to, uint256 deadline)
+        internal
+        returns (uint256)
+    {
         return IVolatilePool(pool).swap(tokenIn, amountIn, 0, to, deadline);
     }
 
@@ -118,11 +115,11 @@ contract Router is IRouter {
         return factory.getVolatilePool(tokenIn, tokenOut);
     }
 
-    function _getStableIndices(
-        address pool,
-        address tokenIn,
-        address tokenOut
-    ) internal view returns (uint256 idxIn, uint256 idxOut) {
+    function _getStableIndices(address pool, address tokenIn, address tokenOut)
+        internal
+        view
+        returns (uint256 idxIn, uint256 idxOut)
+    {
         address t0 = IStablePool(pool).getToken(0);
         if (tokenIn == t0) {
             idxIn = 0;

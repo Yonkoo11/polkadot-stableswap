@@ -3,7 +3,8 @@ import { Contract, parseUnits, formatUnits, JsonRpcSigner, JsonRpcProvider } fro
 import { TOKENS, POOLS, PoolType, POLKADOT_HUB_TESTNET, isZeroAddress, ERC20_ABI } from '../config/contracts';
 import type { PoolConfig } from '../config/contracts';
 import { TokenIcon } from './TokenSelect';
-import { TransactionStepper, useTransactionSteps } from './TransactionStepper';
+import { TransactionStepper } from './TransactionStepper';
+import { useTransactionSteps } from '../hooks/useTransactionSteps';
 import StablePoolABI from '../abi/StablePool.json';
 import VolatilePoolABI from '../abi/VolatilePool.json';
 
@@ -183,7 +184,7 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
       setShowToast(true);
       setTimeout(() => setShowToast(false), 6000);
       setTimeout(() => { addStepper.reset();}, 3000);
-    } catch (err: unknown) {
+    } catch {
       addStepper.fail();
       setTimeout(() => addStepper.reset(), 4000);
     } finally {
@@ -236,7 +237,7 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
       setShowToast(true);
       setTimeout(() => setShowToast(false), 6000);
       setTimeout(() => { removeStepper.reset();}, 3000);
-    } catch (err: unknown) {
+    } catch {
       removeStepper.fail();
       setTimeout(() => removeStepper.reset(), 4000);
     } finally {
@@ -251,8 +252,9 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
       </div>
 
       <div className="pool-selector">
-        <label className="token-label">Pool</label>
+        <label className="token-label" htmlFor="pool-select">Pool</label>
         <select
+          id="pool-select"
           className="token-dropdown"
           value={POOLS.indexOf(selectedPool)}
           onChange={(e) => setSelectedPool(POOLS[parseInt(e.target.value)])}

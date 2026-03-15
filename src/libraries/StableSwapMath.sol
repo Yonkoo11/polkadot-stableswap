@@ -66,13 +66,7 @@ library StableSwapMath {
     /// @param xp Current normalized balances
     /// @param amp Amplification coefficient
     /// @return y New balance of token j
-    function getY(
-        uint256 i,
-        uint256 j,
-        uint256 x,
-        uint256[2] memory xp,
-        uint256 amp
-    ) internal pure returns (uint256) {
+    function getY(uint256 i, uint256 j, uint256 x, uint256[2] memory xp, uint256 amp) internal pure returns (uint256) {
         require(i != j, "StableSwapMath: same token");
         require(i < N_COINS && j < N_COINS, "StableSwapMath: invalid index");
 
@@ -115,13 +109,11 @@ library StableSwapMath {
     /// @param xp Current normalized balances
     /// @param amp Amplification coefficient
     /// @return dy Output amount (normalized to 18 decimals)
-    function getDy(
-        uint256 i,
-        uint256 j,
-        uint256 dx,
-        uint256[2] memory xp,
-        uint256 amp
-    ) internal pure returns (uint256) {
+    function getDy(uint256 i, uint256 j, uint256 dx, uint256[2] memory xp, uint256 amp)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 x = xp[i] + dx;
         uint256 y = getY(i, j, x, xp, amp);
         return xp[j] - y - 1; // -1 for rounding safety
@@ -134,12 +126,7 @@ library StableSwapMath {
     /// @param D The invariant value to target
     /// @param amp Amplification coefficient
     /// @return New balance of token i
-    function getYD(
-        uint256 i,
-        uint256[2] memory xp,
-        uint256 D,
-        uint256 amp
-    ) internal pure returns (uint256) {
+    function getYD(uint256 i, uint256[2] memory xp, uint256 D, uint256 amp) internal pure returns (uint256) {
         uint256 Ann = amp * N_COINS;
 
         uint256 S = 0;

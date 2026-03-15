@@ -41,13 +41,7 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
         _;
     }
 
-    constructor(
-        address _token0,
-        address _token1,
-        uint256 _fee,
-        string memory _lpName,
-        string memory _lpSymbol
-    ) {
+    constructor(address _token0, address _token1, uint256 _fee, string memory _lpName, string memory _lpSymbol) {
         require(_token0 != address(0) && _token1 != address(0), "VolatilePool: zero address");
         require(_token0 != _token1, "VolatilePool: identical tokens");
         require(_fee <= MAX_FEE, "VolatilePool: fee too high");
@@ -74,30 +68,27 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
 
     function getAmountOut(address tokenIn, uint256 amountIn) external view override returns (uint256) {
         require(tokenIn == token0 || tokenIn == token1, "VolatilePool: invalid token");
-        (uint256 resIn, uint256 resOut) = tokenIn == token0
-            ? (reserve0, reserve1)
-            : (reserve1, reserve0);
+        (uint256 resIn, uint256 resOut) = tokenIn == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
         uint256 amountInAfterFee = amountIn * (FEE_DENOMINATOR - fee) / FEE_DENOMINATOR;
         return ConstantProductMath.getAmountOut(amountInAfterFee, resIn, resOut);
     }
 
     // ========== SWAP ==========
 
-    function swap(
-        address tokenIn,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        address to,
-        uint256 deadline
-    ) external override nonReentrant whenNotPaused ensure(deadline) returns (uint256 amountOut) {
+    function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut, address to, uint256 deadline)
+        external
+        override
+        nonReentrant
+        whenNotPaused
+        ensure(deadline)
+        returns (uint256 amountOut)
+    {
         require(tokenIn == token0 || tokenIn == token1, "VolatilePool: invalid token");
         require(amountIn > 0, "VolatilePool: zero input");
         require(to != address(0), "VolatilePool: zero address");
 
         bool isToken0 = tokenIn == token0;
-        (uint256 resIn, uint256 resOut) = isToken0
-            ? (reserve0, reserve1)
-            : (reserve1, reserve0);
+        (uint256 resIn, uint256 resOut) = isToken0 ? (reserve0, reserve1) : (reserve1, reserve0);
 
         // Transfer in
         IERC20(tokenIn).safeTransferFrom(msg.sender, address(this), amountIn);
@@ -124,7 +115,14 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
         uint256 amount1Min,
         address to,
         uint256 deadline
-    ) external override nonReentrant whenNotPaused ensure(deadline) returns (uint256 amount0, uint256 amount1, uint256 lpMinted) {
+    )
+        external
+        override
+        nonReentrant
+        whenNotPaused
+        ensure(deadline)
+        returns (uint256 amount0, uint256 amount1, uint256 lpMinted)
+    {
         require(to != address(0), "VolatilePool: zero address");
 
         uint256 totalSupply = lpTokenContract.totalSupply();
@@ -151,10 +149,7 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
                 amount1 = amount1Desired;
             }
 
-            lpMinted = ConstantProductMath.min(
-                amount0 * totalSupply / reserve0,
-                amount1 * totalSupply / reserve1
-            );
+            lpMinted = ConstantProductMath.min(amount0 * totalSupply / reserve0, amount1 * totalSupply / reserve1);
         }
 
         require(amount0 > 0 && amount1 > 0, "VolatilePool: zero amounts");
@@ -168,13 +163,13 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
         emit AddLiquidity(msg.sender, amount0, amount1, lpMinted);
     }
 
-    function removeLiquidity(
-        uint256 lpAmount,
-        uint256 amount0Min,
-        uint256 amount1Min,
-        address to,
-        uint256 deadline
-    ) external override nonReentrant ensure(deadline) returns (uint256 amount0, uint256 amount1) {
+    function removeLiquidity(uint256 lpAmount, uint256 amount0Min, uint256 amount1Min, address to, uint256 deadline)
+        external
+        override
+        nonReentrant
+        ensure(deadline)
+        returns (uint256 amount0, uint256 amount1)
+    {
         require(to != address(0), "VolatilePool: zero address");
         uint256 totalSupply = lpTokenContract.totalSupply();
         require(lpAmount > 0 && lpAmount <= totalSupply, "VolatilePool: invalid LP amount");
@@ -196,12 +191,12 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
 
     // ========== FLASH LOAN ==========
 
-    function flashLoan(
-        address recipient,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata data
-    ) external override nonReentrant whenNotPaused {
+    function flashLoan(address recipient, uint256 amount0, uint256 amount1, bytes calldata data)
+        external
+        override
+        nonReentrant
+        whenNotPaused
+    {
         require(amount0 > 0 || amount1 > 0, "VolatilePool: zero amounts");
         require(amount0 <= reserve0 && amount1 <= reserve1, "VolatilePool: insufficient reserves");
 
@@ -216,9 +211,7 @@ contract VolatilePool is IVolatilePool, ReentrancyGuard, Pausable, AccessControl
         if (amount0 > 0) IERC20(token0).safeTransfer(recipient, amount0);
         if (amount1 > 0) IERC20(token1).safeTransfer(recipient, amount1);
 
-        IFlashLoanReceiver(recipient).onFlashLoan(
-            msg.sender, amount0, amount1, fee0, fee1, data
-        );
+        IFlashLoanReceiver(recipient).onFlashLoan(msg.sender, amount0, amount1, fee0, fee1, data);
 
         uint256 balance0After = IERC20(token0).balanceOf(address(this));
         uint256 balance1After = IERC20(token1).balanceOf(address(this));

@@ -27,9 +27,9 @@ contract DeployScript is Script {
         StablePool stablePool = new StablePool(
             USDC,
             USDT,
-            85,       // A = 85
-            4e6,      // fee = 0.04%
-            5e9,      // adminFee = 50%
+            85, // A = 85
+            4e6, // fee = 0.04%
+            5e9, // adminFee = 50%
             "USDC-USDT StableSwap LP",
             "ssLP"
         );

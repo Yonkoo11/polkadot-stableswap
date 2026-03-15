@@ -17,11 +17,7 @@ contract PoolFactory is IPoolFactory, Ownable {
 
     // ========== POOL REGISTRATION ==========
 
-    function registerStablePool(
-        address tokenA,
-        address tokenB,
-        address pool
-    ) external override onlyOwner {
+    function registerStablePool(address tokenA, address tokenB, address pool) external override onlyOwner {
         require(pool != address(0), "Factory: zero pool");
         bytes32 key = _pairKey(tokenA, tokenB);
         require(stablePools[key] == address(0), "Factory: pool exists");
@@ -34,11 +30,7 @@ contract PoolFactory is IPoolFactory, Ownable {
         emit StablePoolCreated(t0, t1, pool, 0, 0);
     }
 
-    function registerVolatilePool(
-        address tokenA,
-        address tokenB,
-        address pool
-    ) external override onlyOwner {
+    function registerVolatilePool(address tokenA, address tokenB, address pool) external override onlyOwner {
         require(pool != address(0), "Factory: zero pool");
         bytes32 key = _pairKey(tokenA, tokenB);
         require(volatilePools[key] == address(0), "Factory: pool exists");

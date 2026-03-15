@@ -79,7 +79,7 @@ export function useWallet() {
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: chainParams.chainId }],
       });
-    } catch (switchError: unknown) {
+    } catch {
       // Chain not added yet - try adding it regardless of error code
       // (MetaMask uses 4902, but other wallets may differ)
       try {

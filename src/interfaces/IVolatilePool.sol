@@ -11,35 +11,15 @@ interface IVolatilePool {
         address to
     );
 
-    event AddLiquidity(
-        address indexed provider,
-        uint256 amount0,
-        uint256 amount1,
-        uint256 lpMinted
-    );
+    event AddLiquidity(address indexed provider, uint256 amount0, uint256 amount1, uint256 lpMinted);
 
-    event RemoveLiquidity(
-        address indexed provider,
-        uint256 amount0,
-        uint256 amount1,
-        uint256 lpBurned
-    );
+    event RemoveLiquidity(address indexed provider, uint256 amount0, uint256 amount1, uint256 lpBurned);
 
-    event FlashLoan(
-        address indexed borrower,
-        uint256 amount0,
-        uint256 amount1,
-        uint256 fee0,
-        uint256 fee1
-    );
+    event FlashLoan(address indexed borrower, uint256 amount0, uint256 amount1, uint256 fee0, uint256 fee1);
 
-    function swap(
-        address tokenIn,
-        uint256 amountIn,
-        uint256 minAmountOut,
-        address to,
-        uint256 deadline
-    ) external returns (uint256 amountOut);
+    function swap(address tokenIn, uint256 amountIn, uint256 minAmountOut, address to, uint256 deadline)
+        external
+        returns (uint256 amountOut);
 
     function addLiquidity(
         uint256 amount0Desired,
@@ -50,20 +30,11 @@ interface IVolatilePool {
         uint256 deadline
     ) external returns (uint256 amount0, uint256 amount1, uint256 lpMinted);
 
-    function removeLiquidity(
-        uint256 lpAmount,
-        uint256 amount0Min,
-        uint256 amount1Min,
-        address to,
-        uint256 deadline
-    ) external returns (uint256 amount0, uint256 amount1);
+    function removeLiquidity(uint256 lpAmount, uint256 amount0Min, uint256 amount1Min, address to, uint256 deadline)
+        external
+        returns (uint256 amount0, uint256 amount1);
 
-    function flashLoan(
-        address recipient,
-        uint256 amount0,
-        uint256 amount1,
-        bytes calldata data
-    ) external;
+    function flashLoan(address recipient, uint256 amount0, uint256 amount1, bytes calldata data) external;
 
     function getAmountOut(address tokenIn, uint256 amountIn) external view returns (uint256);
     function getReserves() external view returns (uint256 reserve0, uint256 reserve1);

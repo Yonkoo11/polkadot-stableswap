@@ -85,11 +85,7 @@ contract IntegrationTest is Test {
     function test_router_directStableSwap() public {
         // USDC -> USDT via stable pool
         IRouter.Route[] memory routes = new IRouter.Route[](1);
-        routes[0] = IRouter.Route({
-            tokenIn: address(usdc),
-            tokenOut: address(usdt),
-            poolType: IRouter.PoolType.Stable
-        });
+        routes[0] = IRouter.Route({tokenIn: address(usdc), tokenOut: address(usdt), poolType: IRouter.PoolType.Stable});
 
         vm.startPrank(bob);
         usdc.approve(address(router), type(uint256).max);
@@ -103,11 +99,7 @@ contract IntegrationTest is Test {
     function test_router_directVolatileSwap() public {
         // DOT -> USDC via volatile pool
         IRouter.Route[] memory routes = new IRouter.Route[](1);
-        routes[0] = IRouter.Route({
-            tokenIn: address(dot),
-            tokenOut: address(usdc),
-            poolType: IRouter.PoolType.Volatile
-        });
+        routes[0] = IRouter.Route({tokenIn: address(dot), tokenOut: address(usdc), poolType: IRouter.PoolType.Volatile});
 
         vm.startPrank(bob);
         dot.approve(address(router), type(uint256).max);
@@ -122,16 +114,8 @@ contract IntegrationTest is Test {
     function test_router_multiHop_DOT_USDC_USDT() public {
         // DOT -> USDC (volatile) -> USDT (stable)
         IRouter.Route[] memory routes = new IRouter.Route[](2);
-        routes[0] = IRouter.Route({
-            tokenIn: address(dot),
-            tokenOut: address(usdc),
-            poolType: IRouter.PoolType.Volatile
-        });
-        routes[1] = IRouter.Route({
-            tokenIn: address(usdc),
-            tokenOut: address(usdt),
-            poolType: IRouter.PoolType.Stable
-        });
+        routes[0] = IRouter.Route({tokenIn: address(dot), tokenOut: address(usdc), poolType: IRouter.PoolType.Volatile});
+        routes[1] = IRouter.Route({tokenIn: address(usdc), tokenOut: address(usdt), poolType: IRouter.PoolType.Stable});
 
         vm.startPrank(bob);
         dot.approve(address(router), type(uint256).max);
@@ -147,11 +131,7 @@ contract IntegrationTest is Test {
 
     function test_router_getAmountsOut() public view {
         IRouter.Route[] memory routes = new IRouter.Route[](1);
-        routes[0] = IRouter.Route({
-            tokenIn: address(usdc),
-            tokenOut: address(usdt),
-            poolType: IRouter.PoolType.Stable
-        });
+        routes[0] = IRouter.Route({tokenIn: address(usdc), tokenOut: address(usdt), poolType: IRouter.PoolType.Stable});
 
         uint256[] memory amounts = router.getAmountsOut(routes, 1_000e6);
         assertEq(amounts[0], 1_000e6);
@@ -161,16 +141,8 @@ contract IntegrationTest is Test {
 
     function test_router_getAmountsOut_multiHop() public view {
         IRouter.Route[] memory routes = new IRouter.Route[](2);
-        routes[0] = IRouter.Route({
-            tokenIn: address(dot),
-            tokenOut: address(usdc),
-            poolType: IRouter.PoolType.Volatile
-        });
-        routes[1] = IRouter.Route({
-            tokenIn: address(usdc),
-            tokenOut: address(usdt),
-            poolType: IRouter.PoolType.Stable
-        });
+        routes[0] = IRouter.Route({tokenIn: address(dot), tokenOut: address(usdc), poolType: IRouter.PoolType.Volatile});
+        routes[1] = IRouter.Route({tokenIn: address(usdc), tokenOut: address(usdt), poolType: IRouter.PoolType.Stable});
 
         uint256[] memory amounts = router.getAmountsOut(routes, 100e18);
         assertEq(amounts.length, 3);
@@ -197,7 +169,9 @@ contract IntegrationTest is Test {
         vm.stopPrank();
     }
 
-    function _seedVolatilePool(address user, address tokenA, address tokenB, uint256 amountA, uint256 amountB) internal {
+    function _seedVolatilePool(address user, address tokenA, address tokenB, uint256 amountA, uint256 amountB)
+        internal
+    {
         address volPool = factory.getVolatilePool(tokenA, tokenB);
         VolatilePool vp = VolatilePool(volPool);
         address t0 = vp.token0();

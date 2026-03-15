@@ -1,5 +1,7 @@
 import { POLKADOT_HUB_TESTNET } from '../config/contracts';
 
+type Tab = 'swap' | 'liquidity' | 'dashboard';
+
 interface HeaderProps {
   account: string | null;
   chainId: number | null;
@@ -8,8 +10,8 @@ interface HeaderProps {
   onConnect: () => void;
   onDisconnect: () => void;
   onSwitchNetwork: () => void;
-  activeTab: 'swap' | 'liquidity';
-  onTabChange: (tab: 'swap' | 'liquidity') => void;
+  activeTab: Tab;
+  onTabChange: (tab: Tab) => void;
 }
 
 export function Header({
@@ -51,6 +53,12 @@ export function Header({
             onClick={() => onTabChange('liquidity')}
           >
             Liquidity
+          </button>
+          <button
+            className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => onTabChange('dashboard')}
+          >
+            Pool
           </button>
         </nav>
       </div>

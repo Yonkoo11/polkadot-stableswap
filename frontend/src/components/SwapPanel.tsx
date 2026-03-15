@@ -3,12 +3,22 @@ import { Contract, parseUnits, formatUnits, JsonRpcSigner } from 'ethers';
 import { TOKENS, CONTRACTS, POLKADOT_HUB_TESTNET, isZeroAddress, ERC20_ABI, PoolType } from '../config/contracts';
 import { TokenSelect } from './TokenSelect';
 import { Settings } from './Settings';
+import { TransactionStepper, useTransactionSteps } from './TransactionStepper';
+import { RateIndicator } from './RateIndicator';
 import RouterABI from '../abi/Router.json';
 
 interface SwapPanelProps {
   signer: JsonRpcSigner | null;
   account: string | null;
   router: Contract | null;
+}
+
+function getPriceImpactTier(impact: number): { className: string; level: string } {
+  if (impact < 0.1) return { className: 'impact-excellent', level: 'excellent' };
+  if (impact < 0.5) return { className: 'impact-normal', level: 'normal' };
+  if (impact < 1) return { className: 'impact-caution', level: 'caution' };
+  if (impact < 3) return { className: 'impact-high', level: 'high' };
+  return { className: 'impact-dangerous', level: 'dangerous' };
 }
 
 export function SwapPanel({ signer, account, router }: SwapPanelProps) {
@@ -22,11 +32,19 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [loading, setLoading] = useState(false);
   const [quoting, setQuoting] = useState(false);
-  const [txStatus, setTxStatus] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
   const [priceImpact, setPriceImpact] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastHash, setToastHash] = useState<string | null>(null);
+  const [confirmHighImpact, setConfirmHighImpact] = useState(false);
 
+  const stepper = useTransactionSteps(['Approve', 'Swap', 'Done']);
   const contractsDeployed = !isZeroAddress(CONTRACTS.ROUTER);
+
+  const impactVal = priceImpact ? parseFloat(priceImpact) : 0;
+  const impactTier = getPriceImpactTier(impactVal);
+  const insufficientBalance = amountIn && parseFloat(amountIn) > parseFloat(balanceIn);
+  const needsHighImpactConfirm = impactVal > 5 && !confirmHighImpact;
 
   // Fetch balances
   const fetchBalances = useCallback(async () => {
@@ -57,7 +75,6 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
 
   // Determine pool type for this pair
   const getPoolType = useCallback((): PoolType => {
-    // Stablecoins swap via stable pool
     const stables = ['USDC', 'USDT'];
     if (stables.includes(tokenIn) && stables.includes(tokenOut)) {
       return PoolType.Stable;
@@ -90,12 +107,9 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
         const outputAmount = amounts[amounts.length - 1];
         setAmountOut(formatUnits(outputAmount, tokenOutInfo.decimals));
 
-        // Simple price impact estimate
         const inVal = parseFloat(amountIn);
         const outVal = parseFloat(formatUnits(outputAmount, tokenOutInfo.decimals));
         if (inVal > 0 && outVal > 0) {
-          // For stable pairs, impact = deviation from 1:1
-          // For volatile pairs, this is just a rough indicator
           const poolType = getPoolType();
           if (poolType === PoolType.Stable) {
             const impact = Math.abs(1 - outVal / inVal) * 100;
@@ -117,41 +131,44 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
     return () => clearTimeout(timer);
   }, [amountIn, tokenIn, tokenOut, router, getPoolType]);
 
+  // Reset high impact confirm when inputs change
+  useEffect(() => {
+    setConfirmHighImpact(false);
+  }, [amountIn, tokenIn, tokenOut]);
+
   const handleSwap = async () => {
     if (!signer || !account || !amountIn || !amountOut) return;
     if (isZeroAddress(CONTRACTS.ROUTER)) return;
 
     setLoading(true);
-    setTxStatus('Approving token...');
+    stepper.start();
 
     try {
       const tokenInInfo = TOKENS[tokenIn];
       const tokenOutInfo = TOKENS[tokenOut];
       const parsedAmountIn = parseUnits(amountIn, tokenInInfo.decimals);
       const parsedAmountOut = parseUnits(amountOut, tokenOutInfo.decimals);
-
-      // Calculate min amount out with slippage
       const minOut = parsedAmountOut * BigInt(Math.floor((1 - slippage / 100) * 10000)) / 10000n;
 
       // Approve token
       const erc20 = new Contract(tokenInInfo.address, ERC20_ABI, signer);
       const allowance = await erc20.allowance(account, CONTRACTS.ROUTER);
       if (allowance < parsedAmountIn) {
-        const approveAmount = parsedAmountIn * 1000n; // approve 1000x to avoid re-approving
+        const approveAmount = parsedAmountIn * 1000n;
         const approveTx = await erc20.approve(CONTRACTS.ROUTER, approveAmount);
-        setTxStatus('Waiting for approval confirmation...');
         await approveTx.wait(1);
       }
 
+      stepper.advance(); // Approve -> Swap
+
       // Execute swap
-      setTxStatus('Swapping...');
       const routerWithSigner = new Contract(CONTRACTS.ROUTER, RouterABI, signer);
       const routes = [{
         tokenIn: tokenInInfo.address,
         tokenOut: tokenOutInfo.address,
         poolType: getPoolType(),
       }];
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200); // 20 min
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
 
       const tx = await routerWithSigner.swapExactIn(
         routes,
@@ -160,25 +177,28 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
         account,
         deadline
       );
-      setTxHash(tx.hash);
-      setTxStatus('Waiting for confirmation...');
       await tx.wait(1);
 
-      setTxStatus('Swap successful!');
+      stepper.complete(); // All done
+
       setAmountIn('');
       setAmountOut('');
       fetchBalances();
 
-      setTimeout(() => { setTxStatus(null); setTxHash(null); }, 8000);
+      // Show success toast
+      setToastHash(tx.hash);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 6000);
+
+      setTimeout(() => {
+        stepper.reset();
+      }, 3000);
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : 'Swap failed';
-      const message = raw.includes('user rejected') || raw.includes('ACTION_REJECTED')
-        ? 'Transaction rejected by user'
-        : raw.includes('insufficient funds')
-          ? 'Insufficient gas (DOT) for transaction'
-          : raw.slice(0, 120);
-      setTxStatus(`Error: ${message}`);
-      setTimeout(() => setTxStatus(null), 5000);
+      stepper.fail();
+      // Show error briefly, then reset
+      setTimeout(() => {
+        stepper.reset();
+      }, 4000);
     } finally {
       setLoading(false);
     }
@@ -194,6 +214,12 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
   const handleMaxIn = () => {
     setAmountIn(balanceIn);
   };
+
+  const poolType = getPoolType();
+  const feePercent = poolType === PoolType.Stable ? '0.04' : '0.30';
+  const rate = amountIn && amountOut && parseFloat(amountIn) > 0
+    ? (parseFloat(amountOut) / parseFloat(amountIn)).toFixed(6)
+    : null;
 
   return (
     <div className="panel">
@@ -221,7 +247,8 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
         </div>
       )}
 
-      <div className="input-group">
+      {/* Input: You pay */}
+      <div className={`input-group${insufficientBalance ? ' input-error' : ''}`}>
         <div className="input-row">
           <TokenSelect
             selected={tokenIn}
@@ -237,6 +264,8 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
               onChange={(e) => setAmountIn(e.target.value)}
               min="0"
               step="any"
+              className={insufficientBalance ? 'input-text-error' : ''}
+              disabled={loading}
             />
             {account && (
               <div className="balance-row">
@@ -244,18 +273,22 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
                 <button className="btn-max" onClick={handleMaxIn}>MAX</button>
               </div>
             )}
+            {insufficientBalance && (
+              <span className="inline-error">Insufficient {tokenIn} balance</span>
+            )}
           </div>
         </div>
       </div>
 
       <div className="flip-container">
-        <button className="btn-flip" onClick={handleFlip} title="Swap direction">
+        <button className="btn-flip" onClick={handleFlip} title="Swap direction" disabled={loading}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
             <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" />
           </svg>
         </button>
       </div>
 
+      {/* Output: You receive */}
       <div className="input-group">
         <div className="input-row">
           <TokenSelect
@@ -265,12 +298,16 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
             label="You receive"
           />
           <div className="input-amount">
-            <input
-              type="text"
-              placeholder="0.0"
-              value={quoting ? '...' : amountOut}
-              readOnly
-            />
+            {quoting ? (
+              <div className="shimmer-box" />
+            ) : (
+              <input
+                type="text"
+                placeholder="0.0"
+                value={amountOut}
+                readOnly
+              />
+            )}
             {account && (
               <div className="balance-row">
                 <span className="balance">Balance: {parseFloat(balanceOut).toFixed(4)}</span>
@@ -280,27 +317,78 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
         </div>
       </div>
 
-      {priceImpact && (
-        <div className="swap-detail">
-          <span>Price Impact</span>
-          <span className={parseFloat(priceImpact) > 1 ? 'text-warning' : ''}>{priceImpact}%</span>
+      {/* Collapsible swap details (Uniswap-style) */}
+      {rate && (
+        <div className="swap-details-accordion">
+          <button className="swap-details-header" onClick={() => setDetailsOpen(!detailsOpen)}>
+            <span className="swap-rate-preview">
+              1 {tokenIn} = {rate} {tokenOut}
+            </span>
+            <svg className={`chevron ${detailsOpen ? 'open' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+
+          {detailsOpen && (
+            <div className="swap-details-body">
+              <div className="swap-detail">
+                <span>Route</span>
+                <span>{tokenIn} → {tokenOut} via {poolType === PoolType.Stable ? 'StablePool' : 'VolatilePool'} ({feePercent}% fee)</span>
+              </div>
+
+              {priceImpact && (
+                <div className="swap-detail">
+                  <span>Price Impact</span>
+                  <span className={impactTier.className}>
+                    {(impactTier.level === 'caution' || impactTier.level === 'high' || impactTier.level === 'dangerous') && (
+                      <svg className="warning-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    )}
+                    {priceImpact}%
+                  </span>
+                </div>
+              )}
+
+              <div className="swap-detail">
+                <span>Min. received ({slippage}% slippage)</span>
+                <span>{(parseFloat(amountOut) * (1 - slippage / 100)).toFixed(6)} {tokenOut}</span>
+              </div>
+
+              <div className="swap-detail">
+                <span>Network fee</span>
+                <span>~0.001 DOT</span>
+              </div>
+
+              <div className="swap-detail">
+                <span>LP fee</span>
+                <span>{feePercent}%</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {amountIn && amountOut && (
-        <div className="swap-detail">
-          <span>Rate</span>
-          <span>1 {tokenIn} = {(parseFloat(amountOut) / parseFloat(amountIn)).toFixed(6)} {tokenOut}</span>
+      {/* High price impact warning banner */}
+      {impactVal > 3 && amountOut && (
+        <div className="impact-warning-banner">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span>Price impact is very high ({priceImpact}%). You may receive significantly fewer tokens.</span>
         </div>
       )}
 
-      {amountIn && amountOut && (
-        <div className="swap-detail">
-          <span>Min. received ({slippage}% slippage)</span>
-          <span>{(parseFloat(amountOut) * (1 - slippage / 100)).toFixed(6)} {tokenOut}</span>
-        </div>
+      {/* Transaction stepper */}
+      {stepper.active && (
+        <TransactionStepper steps={stepper.steps} onRetry={handleSwap} />
       )}
 
+      {/* Action button */}
       {!account ? (
         <>
           <div className="notice" style={{ textAlign: 'center', lineHeight: 1.6 }}>
@@ -310,6 +398,7 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
           <button className="btn btn-primary btn-full" disabled>
             Connect wallet to swap
           </button>
+          <RateIndicator />
           <div className="stableswap-info" style={{ marginTop: 4 }}>
             <span className="stableswap-info-label">Curve-style StableSwap</span>
             <span className="stableswap-info-text">
@@ -325,29 +414,49 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
         <button className="btn btn-primary btn-full" disabled>
           Enter an amount
         </button>
-      ) : parseFloat(amountIn) > parseFloat(balanceIn) ? (
-        <button className="btn btn-primary btn-full" disabled>
+      ) : insufficientBalance ? (
+        <button className="btn btn-primary btn-full btn-error-disabled" disabled>
           Insufficient {tokenIn} balance
+        </button>
+      ) : needsHighImpactConfirm ? (
+        <button
+          className="btn btn-full btn-danger"
+          onClick={() => setConfirmHighImpact(true)}
+        >
+          Swap Anyway (High Impact)
         </button>
       ) : (
         <button
-          className="btn btn-primary btn-full"
+          className={`btn btn-primary btn-full${loading ? ' btn-loading' : ''}`}
           onClick={handleSwap}
           disabled={loading || !amountOut}
         >
-          {loading ? txStatus || 'Processing...' : `Swap ${tokenIn} for ${tokenOut}`}
+          {loading ? (
+            <>
+              <svg className="btn-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+              Processing...
+            </>
+          ) : `Swap ${tokenIn} for ${tokenOut}`}
         </button>
       )}
 
-      {txStatus && !loading && (
-        <div className={`tx-status ${txStatus.startsWith('Error') ? 'tx-error' : 'tx-success'}`}>
-          {txStatus}
-          {txHash && (
+      {/* Success toast */}
+      {showToast && (
+        <div className="toast toast-success">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <span>Swap successful!</span>
+          {toastHash && (
             <a
-              href={`${POLKADOT_HUB_TESTNET.blockExplorer}/tx/${txHash}`}
+              href={`${POLKADOT_HUB_TESTNET.blockExplorer}/tx/${toastHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="tx-link"
+              className="toast-link"
             >
               View on Explorer
             </a>

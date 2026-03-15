@@ -3,6 +3,7 @@ import { Contract, parseUnits, formatUnits, JsonRpcSigner } from 'ethers';
 import { TOKENS, POOLS, PoolType, POLKADOT_HUB_TESTNET, isZeroAddress, ERC20_ABI } from '../config/contracts';
 import type { PoolConfig } from '../config/contracts';
 import { TokenIcon } from './TokenSelect';
+import { TransactionStepper, useTransactionSteps } from './TransactionStepper';
 import StablePoolABI from '../abi/StablePool.json';
 import VolatilePoolABI from '../abi/VolatilePool.json';
 
@@ -21,8 +22,9 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
   const [balance1, setBalance1] = useState('0');
   const [lpBalance, setLpBalance] = useState('0');
   const [loading, setLoading] = useState(false);
-  const [txStatus, setTxStatus] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+  const [toastHash, setToastHash] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState('');
   const [poolStats, setPoolStats] = useState<{
     reserve0: string;
     reserve1: string;
@@ -30,6 +32,9 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
     fee?: string;
     ampFactor?: string;
   } | null>(null);
+
+  const addStepper = useTransactionSteps(['Approve Token A', 'Approve Token B', 'Add Liquidity', 'Done']);
+  const removeStepper = useTransactionSteps(['Approve LP', 'Remove Liquidity', 'Done']);
 
   const token0 = TOKENS[selectedPool.token0Symbol];
   const token1 = TOKENS[selectedPool.token1Symbol];
@@ -121,56 +126,65 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
     if (!signer || !account || !poolDeployed) return;
 
     setLoading(true);
-    setTxStatus('Approving tokens...');
+    addStepper.start();
 
     try {
       const amt0 = parseUnits(amount0 || '0', token0.decimals);
       const amt1 = parseUnits(amount1 || '0', token1.decimals);
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
 
-      // Approve both tokens
-      for (const [token, amt] of [[token0, amt0], [token1, amt1]] as [typeof token0, bigint][]) {
-        if (amt > 0n && !isZeroAddress(token.address)) {
-          const erc20 = new Contract(token.address, ERC20_ABI, signer);
-          const allowance = await erc20.allowance(account, selectedPool.address);
-          if (allowance < amt) {
-            const tx = await erc20.approve(selectedPool.address, amt * 1000n);
-            await tx.wait(1);
-          }
+      // Approve token 0
+      if (amt0 > 0n && !isZeroAddress(token0.address)) {
+        const erc20 = new Contract(token0.address, ERC20_ABI, signer);
+        const allowance = await erc20.allowance(account, selectedPool.address);
+        if (allowance < amt0) {
+          const tx = await erc20.approve(selectedPool.address, amt0 * 1000n);
+          await tx.wait(1);
         }
       }
 
-      setTxStatus('Adding liquidity...');
+      addStepper.advance(); // Token A -> Token B
 
+      // Approve token 1
+      if (amt1 > 0n && !isZeroAddress(token1.address)) {
+        const erc20 = new Contract(token1.address, ERC20_ABI, signer);
+        const allowance = await erc20.allowance(account, selectedPool.address);
+        if (allowance < amt1) {
+          const tx = await erc20.approve(selectedPool.address, amt1 * 1000n);
+          await tx.wait(1);
+        }
+      }
+
+      addStepper.advance(); // Token B -> Add Liquidity
+
+      let hash = '';
       if (selectedPool.type === PoolType.Stable) {
         const pool = new Contract(selectedPool.address, StablePoolABI, signer);
         const tx = await pool.addLiquidity([amt0, amt1], 0n, deadline);
-        setTxHash(tx.hash);
-        setTxStatus('Waiting for confirmation...');
+        hash = tx.hash;
         await tx.wait(1);
       } else {
         const pool = new Contract(selectedPool.address, VolatilePoolABI, signer);
         const tx = await pool.addLiquidity(amt0, amt1, 0n, 0n, account, deadline);
-        setTxHash(tx.hash);
-        setTxStatus('Waiting for confirmation...');
+        hash = tx.hash;
         await tx.wait(1);
       }
 
-      setTxStatus('Liquidity added!');
+      addStepper.complete();
       setAmount0('');
       setAmount1('');
       fetchBalances();
       fetchPoolStats();
-      setTimeout(() => { setTxStatus(null); setTxHash(null); }, 8000);
+
+      // Success toast
+      setToastMessage('Liquidity added!');
+      setToastHash(hash);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 6000);
+      setTimeout(() => { addStepper.reset();}, 3000);
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : 'Transaction failed';
-      const message = raw.includes('user rejected') || raw.includes('ACTION_REJECTED')
-        ? 'Transaction rejected by user'
-        : raw.includes('insufficient funds')
-          ? 'Insufficient gas (DOT) for transaction'
-          : raw.slice(0, 120);
-      setTxStatus(`Error: ${message}`);
-      setTimeout(() => setTxStatus(null), 5000);
+      addStepper.fail();
+      setTimeout(() => addStepper.reset(), 4000);
     } finally {
       setLoading(false);
     }
@@ -180,7 +194,7 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
     if (!signer || !account || !poolDeployed || !lpAmount) return;
 
     setLoading(true);
-    setTxStatus('Approving LP token...');
+    removeStepper.start();
 
     try {
       const parsedLp = parseUnits(lpAmount, 18);
@@ -197,34 +211,33 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
         await tx.wait(1);
       }
 
-      setTxStatus('Removing liquidity...');
+      removeStepper.advance(); // Approve -> Remove
 
+      let hash = '';
       if (selectedPool.type === PoolType.Stable) {
         const tx = await pool.removeLiquidity(parsedLp, [0n, 0n], deadline);
-        setTxHash(tx.hash);
-        setTxStatus('Waiting for confirmation...');
+        hash = tx.hash;
         await tx.wait(1);
       } else {
         const tx = await pool.removeLiquidity(parsedLp, 0n, 0n, account, deadline);
-        setTxHash(tx.hash);
-        setTxStatus('Waiting for confirmation...');
+        hash = tx.hash;
         await tx.wait(1);
       }
 
-      setTxStatus('Liquidity removed!');
+      removeStepper.complete();
       setLpAmount('');
       fetchBalances();
       fetchPoolStats();
-      setTimeout(() => { setTxStatus(null); setTxHash(null); }, 8000);
+
+      // Success toast
+      setToastMessage('Liquidity removed!');
+      setToastHash(hash);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 6000);
+      setTimeout(() => { removeStepper.reset();}, 3000);
     } catch (err: unknown) {
-      const raw = err instanceof Error ? err.message : 'Transaction failed';
-      const message = raw.includes('user rejected') || raw.includes('ACTION_REJECTED')
-        ? 'Transaction rejected by user'
-        : raw.includes('insufficient funds')
-          ? 'Insufficient gas (DOT) for transaction'
-          : raw.slice(0, 120);
-      setTxStatus(`Error: ${message}`);
-      setTimeout(() => setTxStatus(null), 5000);
+      removeStepper.fail();
+      setTimeout(() => removeStepper.reset(), 4000);
     } finally {
       setLoading(false);
     }
@@ -242,6 +255,7 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
           className="token-dropdown"
           value={POOLS.indexOf(selectedPool)}
           onChange={(e) => setSelectedPool(POOLS[parseInt(e.target.value)])}
+          disabled={loading}
         >
           {POOLS.map((pool, i) => (
             <option key={i} value={i}>{pool.name}</option>
@@ -253,12 +267,14 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
         <button
           className={`mode-btn ${mode === 'add' ? 'active' : ''}`}
           onClick={() => setMode('add')}
+          disabled={loading}
         >
           Add
         </button>
         <button
           className={`mode-btn ${mode === 'remove' ? 'active' : ''}`}
           onClick={() => setMode('remove')}
+          disabled={loading}
         >
           Remove
         </button>
@@ -286,6 +302,7 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
                   onChange={(e) => setAmount0(e.target.value)}
                   min="0"
                   step="any"
+                  disabled={loading}
                 />
                 {account && (
                   <div className="balance-row">
@@ -311,6 +328,7 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
                   onChange={(e) => setAmount1(e.target.value)}
                   min="0"
                   step="any"
+                  disabled={loading}
                 />
                 {account && (
                   <div className="balance-row">
@@ -322,17 +340,30 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
             </div>
           </div>
 
+          {/* Stepper */}
+          {addStepper.active && (
+            <TransactionStepper steps={addStepper.steps} onRetry={handleAddLiquidity} />
+          )}
+
           {!account ? (
             <button className="btn btn-primary btn-full" disabled>Connect wallet</button>
           ) : !poolDeployed ? (
             <button className="btn btn-primary btn-full" disabled>Pool not deployed</button>
           ) : (
             <button
-              className="btn btn-primary btn-full"
+              className={`btn btn-primary btn-full${loading ? ' btn-loading' : ''}`}
               onClick={handleAddLiquidity}
               disabled={loading || (!amount0 && !amount1)}
             >
-              {loading ? txStatus || 'Processing...' : 'Add Liquidity'}
+              {loading ? (
+                <>
+                  <svg className="btn-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  Adding Liquidity...
+                </>
+              ) : 'Add Liquidity'}
             </button>
           )}
         </>
@@ -352,6 +383,7 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
                   onChange={(e) => setLpAmount(e.target.value)}
                   min="0"
                   step="any"
+                  disabled={loading}
                 />
                 {account && (
                   <div className="balance-row">
@@ -363,31 +395,49 @@ export function LiquidityPanel({ signer, account }: LiquidityPanelProps) {
             </div>
           </div>
 
+          {/* Stepper */}
+          {removeStepper.active && (
+            <TransactionStepper steps={removeStepper.steps} onRetry={handleRemoveLiquidity} />
+          )}
+
           {!account ? (
             <button className="btn btn-primary btn-full" disabled>Connect wallet</button>
           ) : !poolDeployed ? (
             <button className="btn btn-primary btn-full" disabled>Pool not deployed</button>
           ) : (
             <button
-              className="btn btn-primary btn-full"
+              className={`btn btn-primary btn-full${loading ? ' btn-loading' : ''}`}
               onClick={handleRemoveLiquidity}
               disabled={loading || !lpAmount}
             >
-              {loading ? txStatus || 'Processing...' : 'Remove Liquidity'}
+              {loading ? (
+                <>
+                  <svg className="btn-spinner" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+                    <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  </svg>
+                  Removing Liquidity...
+                </>
+              ) : 'Remove Liquidity'}
             </button>
           )}
         </>
       )}
 
-      {txStatus && !loading && (
-        <div className={`tx-status ${txStatus.startsWith('Error') ? 'tx-error' : 'tx-success'}`}>
-          {txStatus}
-          {txHash && (
+      {/* Success toast */}
+      {showToast && (
+        <div className="toast toast-success">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+          <span>{toastMessage}</span>
+          {toastHash && (
             <a
-              href={`${POLKADOT_HUB_TESTNET.blockExplorer}/tx/${txHash}`}
+              href={`${POLKADOT_HUB_TESTNET.blockExplorer}/tx/${toastHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="tx-link"
+              className="toast-link"
             >
               View on Explorer
             </a>

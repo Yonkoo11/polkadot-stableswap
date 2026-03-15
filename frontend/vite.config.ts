@@ -5,4 +5,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/polkadot-stableswap/',
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/ethers')) {
+            return 'ethers'
+          }
+        },
+      },
+    },
+  },
 })

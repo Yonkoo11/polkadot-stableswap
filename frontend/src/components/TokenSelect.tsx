@@ -2,12 +2,22 @@ import { useState, useRef, useEffect } from 'react';
 import { TOKENS } from '../config/contracts';
 import type { TokenInfo } from '../config/contracts';
 
+import usdcLogo from '../assets/tokens/usdc.svg';
+import usdtLogo from '../assets/tokens/usdt.svg';
+import dotLogo from '../assets/tokens/dot.svg';
+
 interface TokenSelectProps {
   selected: string;
   onChange: (symbol: string) => void;
   exclude?: string;
   label: string;
 }
+
+const TOKEN_LOGOS: Record<string, string> = {
+  USDC: usdcLogo,
+  USDT: usdtLogo,
+  DOT: dotLogo,
+};
 
 const TOKEN_COLORS: Record<string, string> = {
   USDC: '#2775ca',
@@ -16,6 +26,21 @@ const TOKEN_COLORS: Record<string, string> = {
 };
 
 function TokenIcon({ symbol, size = 24 }: { symbol: string; size?: number }) {
+  const logo = TOKEN_LOGOS[symbol];
+
+  if (logo) {
+    return (
+      <img
+        src={logo}
+        alt={symbol}
+        width={size}
+        height={size}
+        style={{ borderRadius: '50%', flexShrink: 0 }}
+      />
+    );
+  }
+
+  // Fallback for unknown tokens
   const color = TOKEN_COLORS[symbol] || '#6b7280';
   return (
     <div

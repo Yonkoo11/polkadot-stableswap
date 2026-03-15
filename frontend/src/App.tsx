@@ -49,7 +49,7 @@ function App() {
         <div className="footer-links">
           <a href="https://blockscout-testnet.polkadot.io/address/0x6c70b98613Cc567e3c1FeE9248aE58d291e3AfFA" target="_blank" rel="noopener noreferrer">Contracts</a>
           <span className="footer-sep">|</span>
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://github.com/Yonkoo11/polkadot-stableswap" target="_blank" rel="noopener noreferrer">GitHub</a>
           <span className="footer-sep">|</span>
           <span className="footer-dot">Polkadot Solidity Hackathon 2026</span>
         </div>

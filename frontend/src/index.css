@@ -8,6 +8,10 @@
 }
 
 :root {
+  /* Mouse position (updated by JS) */
+  --mx: 0.5;
+  --my: 0.5;
+
   /* Core palette */
   --bg: #0a0812;
   --bg-card: rgba(20, 21, 28, 0.55);

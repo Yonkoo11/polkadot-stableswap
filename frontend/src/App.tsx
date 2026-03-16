@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from './hooks/useWallet';
 import { useContracts } from './hooks/useContracts';
 import { Header } from './components/Header';
@@ -13,6 +13,18 @@ function App() {
   const wallet = useWallet();
   const { router, readProvider } = useContracts(wallet.provider);
   const [activeTab, setActiveTab] = useState<Tab>('swap');
+
+  // Mouse-reactive background orbs
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      document.documentElement.style.setProperty('--mx', String(x));
+      document.documentElement.style.setProperty('--my', String(y));
+    };
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
 
   return (
     <div className="app">

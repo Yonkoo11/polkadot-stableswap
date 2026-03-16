@@ -22,7 +22,8 @@
 .bg-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(60px) brightness(calc(0.85 + 0.3 * var(--my)));
+  transition: filter 0.8s ease-out;
 }
 
 .bg-orb--1 {
@@ -387,7 +388,7 @@
   flex-direction: column;
   gap: 8px;
   box-shadow: var(--shadow-panel);
-  transition: border-color 0.3s, box-shadow 0.3s;
+  transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
   position: relative;
   z-index: 1;
   animation: page-fade-in 0.4s ease-out;
@@ -405,11 +406,17 @@
   background: linear-gradient(90deg, transparent, rgba(120, 80, 200, 0.5), transparent);
   border-radius: 0 0 50% 50%;
   pointer-events: none;
+  transition: background 0.3s;
 }
 
 .panel:hover {
-  border-color: rgba(120, 80, 200, 0.20);
-  box-shadow: var(--shadow-panel), 0 0 80px rgba(80, 40, 160, 0.08);
+  border-color: rgba(120, 80, 200, 0.25);
+  box-shadow: var(--shadow-panel), 0 0 80px rgba(80, 40, 160, 0.12);
+  transform: translateY(-2px);
+}
+
+.panel:hover::before {
+  background: linear-gradient(90deg, transparent, rgba(140, 100, 220, 0.7), transparent);
 }
 
 .panel-header {
@@ -1013,6 +1020,32 @@
   margin: 8px 0 0;
 }
 
+/* Chart draw-in animation */
+@keyframes chart-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+.rate-indicator-curve {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: chart-draw 1.2s ease-out forwards;
+}
+
+.rate-indicator-curve--delayed {
+  animation-delay: 0.3s;
+}
+
+@keyframes chart-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rate-indicator-fill {
+  animation: chart-fade 0.8s ease-out 0.6s forwards;
+  opacity: 0;
+}
+
 /* ================================
    Settings Panel
    ================================ */
@@ -1388,12 +1421,13 @@
   box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 
 .bento-card:hover {
-  border-color: rgba(120, 80, 200, 0.20);
-  box-shadow: var(--shadow-card), 0 0 50px rgba(80, 40, 160, 0.08);
+  border-color: rgba(120, 80, 200, 0.25);
+  box-shadow: var(--shadow-card), 0 0 50px rgba(80, 40, 160, 0.12);
+  transform: translateY(-2px);
 }
 
 /* Top-edge glow line on cards */
@@ -1405,6 +1439,11 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent 0%, rgba(120, 80, 200, 0.45) 50%, transparent 100%);
+  transition: background 0.3s;
+}
+
+.bento-card:hover::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(140, 100, 220, 0.65) 50%, transparent 100%);
 }
 
 .bento-card--wide {
@@ -1435,6 +1474,12 @@
   background: rgba(160, 120, 255, 0.6);
   border-radius: 50%;
   box-shadow: 0 0 4px rgba(160, 120, 255, 0.3);
+  transition: box-shadow 0.3s, background 0.3s;
+}
+
+.bento-card:hover .bento-label::before {
+  box-shadow: 0 0 8px rgba(160, 120, 255, 0.5);
+  background: rgba(160, 120, 255, 0.8);
 }
 
 .bento-value {

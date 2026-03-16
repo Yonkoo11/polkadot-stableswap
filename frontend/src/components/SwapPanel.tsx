@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Contract, parseUnits, formatUnits, JsonRpcSigner } from 'ethers';
 import { TOKENS, CONTRACTS, POLKADOT_HUB_TESTNET, isZeroAddress, ERC20_ABI, PoolType } from '../config/contracts';
 import { TokenSelect } from './TokenSelect';
@@ -38,7 +38,9 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastHash, setToastHash] = useState<string | null>(null);
   const [confirmHighImpact, setConfirmHighImpact] = useState(false);
+  const [txError, setTxError] = useState<string | null>(null);
 
+  const quoteIdRef = useRef(0);
   const stepper = useTransactionSteps(['Approve', 'Swap', 'Done']);
   const contractsDeployed = !isZeroAddress(CONTRACTS.ROUTER);
 
@@ -85,6 +87,7 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
 
   // Get quote
   useEffect(() => {
+    const requestId = ++quoteIdRef.current;
     const getQuote = async () => {
       if (!amountIn || !router || parseFloat(amountIn) === 0) {
         setAmountOut('');
@@ -105,6 +108,7 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
         }];
 
         const amounts = await router.getAmountsOut(routes, parsedAmount);
+        if (requestId !== quoteIdRef.current) return; // stale response
         const outputAmount = amounts[amounts.length - 1];
         setAmountOut(formatUnits(outputAmount, tokenOutInfo.decimals));
 
@@ -142,14 +146,13 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
     if (isZeroAddress(CONTRACTS.ROUTER)) return;
 
     setLoading(true);
+    setTxError(null);
     stepper.start();
 
     try {
       const tokenInInfo = TOKENS[tokenIn];
       const tokenOutInfo = TOKENS[tokenOut];
       const parsedAmountIn = parseUnits(amountIn, tokenInInfo.decimals);
-      const parsedAmountOut = parseUnits(amountOut, tokenOutInfo.decimals);
-      const minOut = parsedAmountOut * BigInt(Math.floor((1 - slippage / 100) * 10000)) / 10000n;
 
       // Approve token
       const erc20 = new Contract(tokenInInfo.address, ERC20_ABI, signer);
@@ -162,19 +165,24 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
 
       stepper.advance(); // Approve -> Swap
 
-      // Execute swap
+      // Re-fetch quote post-approval to get fresh output amount
       const routerWithSigner = new Contract(CONTRACTS.ROUTER, RouterABI, signer);
       const routes = [{
         tokenIn: tokenInInfo.address,
         tokenOut: tokenOutInfo.address,
         poolType: getPoolType(),
       }];
+
+      const freshAmounts = await routerWithSigner.getAmountsOut(routes, parsedAmountIn);
+      const freshOut = freshAmounts[freshAmounts.length - 1];
+      const freshMinOut = freshOut * BigInt(Math.floor((1 - slippage / 100) * 10000)) / 10000n;
+
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 1200);
 
       const tx = await routerWithSigner.swapExactIn(
         routes,
         parsedAmountIn,
-        minOut,
+        freshMinOut,
         account,
         deadline
       );
@@ -194,12 +202,15 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
       setTimeout(() => {
         stepper.reset();
       }, 3000);
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Transaction failed';
+      const userRejected = message.includes('user rejected') || message.includes('ACTION_REJECTED');
+      setTxError(userRejected ? 'Transaction rejected by user' : message);
       stepper.fail();
-      // Show error briefly, then reset
       setTimeout(() => {
         stepper.reset();
-      }, 4000);
+        setTxError(null);
+      }, 6000);
     } finally {
       setLoading(false);
     }
@@ -262,7 +273,13 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
               type="number"
               placeholder="0.0"
               value={amountIn}
-              onChange={(e) => setAmountIn(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Allow empty, or valid decimal with max 6 decimal places (token decimals)
+                if (val === '' || /^\d*\.?\d{0,6}$/.test(val)) {
+                  setAmountIn(val);
+                }
+              }}
               min="0"
               step="any"
               className={insufficientBalance ? 'input-text-error' : ''}
@@ -390,6 +407,11 @@ export function SwapPanel({ signer, account, router }: SwapPanelProps) {
       {/* Transaction stepper */}
       {stepper.active && (
         <TransactionStepper steps={stepper.steps} onRetry={handleSwap} />
+      )}
+
+      {/* Transaction error */}
+      {txError && (
+        <div className="notice notice-error">{txError}</div>
       )}
 
       {/* Action button */}

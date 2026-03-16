@@ -69,7 +69,6 @@ function App() {
           <Dashboard
             readProvider={readProvider}
             account={wallet.account}
-            signer={wallet.signer}
           />
         )}
       </main>

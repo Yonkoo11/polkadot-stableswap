@@ -27,6 +27,7 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
   const [showToast, setShowToast] = useState(false);
   const [toastHash, setToastHash] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [txError, setTxError] = useState<string | null>(null);
   const [poolStats, setPoolStats] = useState<{
     reserve0: string;
     reserve1: string;
@@ -128,6 +129,7 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
     if (!signer || !account || !poolDeployed) return;
 
     setLoading(true);
+    setTxError(null);
     addStepper.start();
 
     try {
@@ -184,9 +186,12 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
       setShowToast(true);
       setTimeout(() => setShowToast(false), 6000);
       setTimeout(() => { addStepper.reset();}, 3000);
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Transaction failed';
+      const userRejected = message.includes('user rejected') || message.includes('ACTION_REJECTED');
+      setTxError(userRejected ? 'Transaction rejected by user' : message);
       addStepper.fail();
-      setTimeout(() => addStepper.reset(), 4000);
+      setTimeout(() => { addStepper.reset(); setTxError(null); }, 6000);
     } finally {
       setLoading(false);
     }
@@ -196,6 +201,7 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
     if (!signer || !account || !poolDeployed || !lpAmount) return;
 
     setLoading(true);
+    setTxError(null);
     removeStepper.start();
 
     try {
@@ -237,9 +243,12 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
       setShowToast(true);
       setTimeout(() => setShowToast(false), 6000);
       setTimeout(() => { removeStepper.reset();}, 3000);
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Transaction failed';
+      const userRejected = message.includes('user rejected') || message.includes('ACTION_REJECTED');
+      setTxError(userRejected ? 'Transaction rejected by user' : message);
       removeStepper.fail();
-      setTimeout(() => removeStepper.reset(), 4000);
+      setTimeout(() => { removeStepper.reset(); setTxError(null); }, 6000);
     } finally {
       setLoading(false);
     }
@@ -437,6 +446,11 @@ export function LiquidityPanel({ signer, account, readProvider }: LiquidityPanel
             </button>
           )}
         </>
+      )}
+
+      {/* Transaction error */}
+      {txError && (
+        <div className="notice notice-error">{txError}</div>
       )}
 
       {/* Success toast */}

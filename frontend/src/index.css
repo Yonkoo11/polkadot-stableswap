@@ -26,7 +26,7 @@
   /* Text */
   --text: #9ca3af;
   --text-bright: #f3f4f6;
-  --text-dim: rgba(107, 114, 128, 0.9);
+  --text-dim: rgba(148, 155, 169, 0.95);
 
   /* Accent - Polkadot pink */
   --accent: #e6007a;

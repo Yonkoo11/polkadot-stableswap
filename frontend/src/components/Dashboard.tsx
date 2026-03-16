@@ -11,7 +11,6 @@ const LP_ABI = [
 interface DashboardProps {
   readProvider: JsonRpcProvider;
   account: string | null;
-  signer: unknown | null;
 }
 
 interface PoolStats {

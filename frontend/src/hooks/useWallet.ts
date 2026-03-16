@@ -144,6 +144,8 @@ export function useWallet() {
           const provider = new BrowserProvider(window.ethereum!);
           updateChainState(provider);
         }
+      }).catch((err: unknown) => {
+        console.error('Auto-connect failed:', err);
       });
     }
   }, [updateChainState]);

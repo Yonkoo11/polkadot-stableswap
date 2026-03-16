@@ -31,7 +31,11 @@ export function Settings({ slippage, onSlippageChange, onClose }: SettingsProps)
           <input
             type="number"
             value={slippage}
-            onChange={(e) => onSlippageChange(parseFloat(e.target.value) || 0.5)}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              if (isNaN(val)) return;
+              onSlippageChange(Math.min(50, Math.max(0.01, val)));
+            }}
             min="0.01"
             max="50"
             step="0.1"

@@ -75,14 +75,6 @@ export const POOLS: PoolConfig[] = [
     token1Symbol: 'USDT',
     name: 'USDC/USDT (Stable)',
   },
-  // Volatile pools can be added here after deployment
-  // {
-  //   address: CONTRACTS.VOLATILE_POOL_DOT_USDC,
-  //   type: PoolType.Volatile,
-  //   token0Symbol: 'DOT',
-  //   token1Symbol: 'USDC',
-  //   name: 'DOT/USDC (Volatile)',
-  // },
 ];
 
 export const isZeroAddress = (addr: string) =>

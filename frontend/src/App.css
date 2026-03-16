@@ -1272,6 +1272,12 @@
   margin-top: 8px;
 }
 
+.notice-error {
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--red);
+  margin-top: 8px;
+}
+
 /* ================================
    TX Status
    ================================ */
@@ -1667,8 +1673,9 @@
   }
 
   .nav-tab {
-    padding: 5px 10px;
+    padding: 8px 14px;
     font-size: 13px;
+    min-height: 44px;
   }
 
   .network-badge {
@@ -1703,6 +1710,23 @@
   .btn-warning {
     font-size: 12px;
     padding: 6px 10px;
+  }
+
+  .btn-icon,
+  .btn-flip {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .slippage-btn,
+  .mode-btn {
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+
+  .btn-max {
+    min-height: 36px;
+    padding: 4px 12px;
   }
 
   .toast {
